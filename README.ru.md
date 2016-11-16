@@ -135,7 +135,7 @@ FAQ
 
 **Q**: Я не могу переопределить вызовы некоторых функций: call_user_func(_array)?, defined, etc.\
 
-**A**: Есть ряд функций, для который существуют встроенные моки и их действительно нельзя перехватить. Вот их список:
+**A**: Есть ряд функций, для которых существуют встроенные моки и по умолчанию их нельзя перехватить. Вот их список:
 * call_user_func_array
 * call_user_func
 * is_callable
@@ -143,6 +143,17 @@ FAQ
 * constant
 * defined
 * debug_backtrace
+
+Что бы включить перехватывание для них, нужно вызвать `\QA\SoftMocks::setRewriteInternal(true)` после подключения bootstrap-а, но будьте внимателены.
+Например, если strlen и call_user_func(_array) переопределены, то можно получить разные результаты для strlen: 
+```php
+\QA\SoftMocks::redefineFunction('call_user_func_array', '', function () {return 20;});
+\QA\SoftMocks::redefineFunction('strlen', '', function () {return 5;});
+...
+strlen('test'); // вернет 5
+call_user_func_array('strlen', ['test']); // вернет 20
+call_user_func('strlen', 'test'); // вернет 5
+```
 
 **Q**: Почему я получаю Parse error или Fatal error с попыткой вызова несуществующих методов PhpParser?
 

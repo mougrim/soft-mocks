@@ -137,7 +137,8 @@ FAQ
 
 **Q**: I can't override certain function calls: call_user_func(_array)?, defined, etc.
 
-**A**: There are a bunch of functions that have their own built-in mocks which can't be intercepted. Here is an incomplete list of them:
+**A**: There are a bunch of functions that have their own built-in mocks which by default can't be intercepted.
+Here is an incomplete list of them:
 * call_user_func_array
 * call_user_func
 * is_callable
@@ -145,6 +146,17 @@ FAQ
 * constant
 * defined
 * debug_backtrace
+
+So you can enable intercepting for them by call `\QA\SoftMocks::setRewriteInternal(true)` after require bootstrap, but be attentive.
+For example, if strlen and call_user_func(_array) is redefined, then you can get different result for strlen:
+```php
+\QA\SoftMocks::redefineFunction('call_user_func_array', '', 'return 20;');
+\QA\SoftMocks::redefineFunction('strlen', '', 'return 5;');
+...
+strlen('test'); // will return 5
+call_user_func_array('strlen', ['test']); // will return 20
+call_user_func('strlen', 'test'); // will return 5
+```
 
 **Q**: How do I use Soft Mocks with PHPUnit?
 
