@@ -1383,19 +1383,18 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
         self::assertSame(20, DescendantFirstTestClass::getDescendant());
     }
 
-    /**
-     * @expectedException \Error
-     * @expectedExceptionMessage Undefined class constant
-     */
     public function testDescendantBad()
     {
+        $exception_class = \Error::class;
         if (PHP_VERSION_ID < 70100) {
-            if (\method_exists($this, 'expectException')) {
-                $this->expectException(\RuntimeException::class);
-            } else {
-                // for phpunit 4.x
-                $this->setExpectedException(\RuntimeException::class, 'Undefined class constant');
-            }
+            $exception_class = \RuntimeException::clas;
+        }
+        if (\method_exists($this, 'expectException')) {
+            $this->expectException($exception_class);
+            $this->expectExceptionMessage('Undefined class constant');
+        } else {
+            // for phpunit 4.x
+            $this->setExpectedException($exception_class, 'Undefined class constant');
         }
         DescendantBaseTestClass::getDescendant();
     }
@@ -1444,23 +1443,24 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
         static::assertSame($expected_result, $result);
     }
 
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage File should not be empty
-     */
     public function testResolveFileFileShouldNotBeEmptyException()
     {
+        if (\method_exists($this, 'expectException')) {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessage('File should not be empty');
+        } else {
+            // for phpunit 4.x
+            $this->setExpectedException(\RuntimeException::class, 'File should not be empty');
+        }
         $this->getPrepareFilePathToRewriteMethod()->invoke(null, '');
     }
 
-    /**
-     * @expectedException \RuntimeException
-     */
     public function testResolveAbsoluteFilePathNotResolvedException()
     {
         $file = __DIR__ . '/fixtures/original/__unknown.php';
         $exception_message = "Can't resolve file '{$file}'";
         if (\method_exists($this, 'expectExceptionMessage')) {
+            $this->expectException(\RuntimeException::class);
             $this->expectExceptionMessage($exception_message);
         } else {
             // for phpunit 4.x
@@ -1469,14 +1469,12 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
         $this->getPrepareFilePathToRewriteMethod()->invoke(null, $file);
     }
 
-    /**
-     * @expectedException \RuntimeException
-     */
     public function testResolveRelativeFilePathNotResolvedException()
     {
         $file = 'unit/Badoo/fixtures/original/php7.php';
         $exception_message = "Can't resolve file '{$file}'";
         if (\method_exists($this, 'expectExceptionMessage')) {
+            $this->expectException(\RuntimeException::class);
             $this->expectExceptionMessage($exception_message);
         } else {
             // for phpunit 4.x
@@ -1503,12 +1501,16 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
         return $ResolveFileMethod;
     }
 
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessage You will never see this message
-     */
     public function testNotOk()
     {
+        if (\method_exists($this, 'expectExceptionMessage')) {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessage('You will never see this message');
+        } else {
+            // for phpunit 4.x
+            $this->setExpectedException(\RuntimeException::class, 'You will never see this message');
+        }
+
         throw new \RuntimeException("You will never see this message");
 
         $Mock = $this->getMock(MyTest::class, ['stubFunction']);
@@ -1605,14 +1607,14 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider providerWithOrWithoutMock
      *
-     * @expectedException        \Error
-     * @expectedExceptionMessage Cannot access private const
-     *
      * @param bool $set_mock
      */
     public function testWithWrongPrivateConstantAccessPHP71($set_mock)
     {
         static::markTestSkippedForPHPVersionBelow('7.1.0');
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Cannot access private const');
 
         require_once __DIR__ . '/WithRestrictedConstantsPHP71TestClass.php';
 
@@ -1626,14 +1628,14 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider providerWithOrWithoutMock
      *
-     * @expectedException        \Error
-     * @expectedExceptionMessage Cannot access private const
-     *
      * @param bool $set_mock
      */
     public function testWithWrongPrivateConstantAccessFromFunctionPHP71($set_mock)
     {
         static::markTestSkippedForPHPVersionBelow('7.1.0');
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Cannot access private const');
 
         require_once __DIR__ . '/WithRestrictedConstantsPHP71TestClass.php';
 
@@ -1647,14 +1649,14 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider providerWithOrWithoutMock
      *
-     * @expectedException        \Error
-     * @expectedExceptionMessage Cannot access private const
-     *
      * @param bool $set_mock
      */
     public function testWithWrongParentPrivateConstantAccessPHP71($set_mock)
     {
         static::markTestSkippedForPHPVersionBelow('7.1.0');
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Cannot access private const');
 
         require_once __DIR__ . '/WithRestrictedConstantsPHP71TestClass.php';
 
@@ -1735,14 +1737,14 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider providerWithOrWithoutMock
      *
-     * @expectedException        \Error
-     * @expectedExceptionMessage Cannot access protected const
-     *
      * @param bool $set_mock
      */
     public function testWithWrongProtectedConstantAccessPHP71($set_mock)
     {
         static::markTestSkippedForPHPVersionBelow('7.1.0');
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Cannot access protected const');
 
         require_once __DIR__ . '/WithRestrictedConstantsPHP71TestClass.php';
 
@@ -1756,14 +1758,14 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
     /**
      * @dataProvider providerWithOrWithoutMock
      *
-     * @expectedException        \Error
-     * @expectedExceptionMessage Cannot access protected const
-     *
      * @param bool $set_mock
      */
     public function testWithWrongProtectedConstantAccessFromFunctionPHP71($set_mock)
     {
         static::markTestSkippedForPHPVersionBelow('7.1.0');
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Cannot access protected const');
 
         require_once __DIR__ . '/WithRestrictedConstantsPHP71TestClass.php';
 
@@ -2720,13 +2722,12 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(trim(file_get_contents(__DIR__ . '/fixtures/expected/' . $filename)), file_get_contents($result));
     }
 
-    /**
-     * @expectedException \Error
-     * @expectedExceptionMessage Cannot access protected const
-     */
     public function testCrossPHP71()
     {
         static::markTestSkippedForPHPVersionBelow('7.1.0');
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Cannot access protected const');
 
         require_once __DIR__ . '/WithRestrictedConstantsPHP71TestClass.php';
 
@@ -2742,13 +2743,12 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
         self::assertSame(20, DescendantFirstPHP71TestClass::getDescendant());
     }
 
-    /**
-     * @expectedException \Error
-     * @expectedExceptionMessage Undefined class constant
-     */
     public function testDescendantBadPHP71()
     {
         static::markTestSkippedForPHPVersionBelow('7.1.0');
+
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Undefined class constant');
 
         require_once __DIR__ . '/WithRestrictedConstantsPHP71TestClass.php';
 
