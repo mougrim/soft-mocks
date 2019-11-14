@@ -1387,7 +1387,7 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
     {
         $exception_class = \Error::class;
         if (PHP_VERSION_ID < 70100) {
-            $exception_class = \RuntimeException::clas;
+            $exception_class = \RuntimeException::class;
         }
         if (\method_exists($this, 'expectException')) {
             $this->expectException($exception_class);
