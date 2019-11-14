@@ -23,7 +23,7 @@ before_script:
   # dirty hack for compatible with old php versions
   - >
     if [ $(php -r 'echo version_compare(phpversion(), "7.1.0");') == "-1" ]; then
-      sed -i -- 's/\(protected function [A-Za-z0-9_-]*\\\(\\\)\) : void/\1/g' tests/unit/Badoo/*Test.php;
+      sed -i -- 's/\(protected function [A-Za-z0-9_-]*()\) : void/\1/g' tests/unit/Badoo/*Test.php;
     fi
   - mkdir -p /tmp/mocks/
   - rm -rf /tmp/mocks_changed/
