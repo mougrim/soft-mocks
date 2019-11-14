@@ -2050,9 +2050,13 @@ class SoftMocks
                 'file_loader' => \PHPUnit\Util\Fileloader::class,
                 'filter' => \PHPUnit\Util\Filter::class,
             ],
+            [
+                'file_loader' => \PHPUnit\Util\FileLoader::class,
+                'filter' => \PHPUnit\Util\Filter::class,
+            ],
         ];
         /** @noinspection PhpUndefinedClassInspection */
-        /** @var \PHPUnit_Util_Fileloader[]|\PHPUnit\Util\Fileloader[] $classes */
+        /** @var \PHPUnit_Util_Fileloader[]|\PHPUnit\Util\Fileloader[]|\PHPUnit\Util\FileLoader[] $classes */
         $classes = null;
         foreach ($possible_class_groups as $possible_classes) {
             if (!class_exists($possible_classes['file_loader'], false)) {
@@ -2065,7 +2069,7 @@ class SoftMocks
             return;
         }
 
-        /** @var \PHPUnit_Util_Fileloader|\PHPUnit\Util\Fileloader $file_loader */
+        /** @var \PHPUnit_Util_Fileloader|\PHPUnit\Util\Fileloader|\PHPUnit\Util\FileLoader $file_loader */
         $file_loader = $classes['file_loader'];
         /** @var \PHPUnit_Util_Filter|\PHPUnit\Util\Filter $filter */
         $filter = $classes['filter'];

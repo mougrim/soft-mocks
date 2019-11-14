@@ -1,0 +1,47 @@
+diff --git a/src/CodeCoverage.php b/src/CodeCoverage.php
+index 67ba403..cc1ca15 100644
+--- a/src/CodeCoverage.php
++++ b/src/CodeCoverage.php
+@@ -195,7 +195,17 @@ public function getData(bool $raw = false): array
+             $this->addUncoveredFilesFromWhitelist();
+         }
+ 
+-        return $this->data;
++        $data = [];
++        if ($restoreCallback = \PHPUnit\Util\FileLoader::getFilenameRestoreCallback()) {
++            foreach ($this->data as $file => $lines) {
++                $file = $restoreCallback($file);
++                $data[$file] = $lines;
++            }
++        } else {
++            $data = $this->data;
++        }
++
++        return $data;
+     }
+ 
+     /**
+diff --git a/src/Filter.php b/src/Filter.php
+index 631e22c..fc2461d 100644
+--- a/src/Filter.php
++++ b/src/Filter.php
+@@ -48,6 +48,9 @@ public function addDirectoryToWhitelist(string $directory, string $suffix = '.ph
+      */
+     public function addFileToWhitelist(string $filename): void
+     {
++        if ($rewriteCallback = \PHPUnit\Util\FileLoader::getFilenameRewriteCallback()) {
++            $filename = $rewriteCallback($filename);
++        }
+         $this->whitelistedFiles[\realpath($filename)] = true;
+     }
+ 
+@@ -81,6 +84,9 @@ public function removeDirectoryFromWhitelist(string $directory, string $suffix =
+      */
+     public function removeFileFromWhitelist(string $filename): void
+     {
++        if ($rewriteCallback = \PHPUnit\Util\FileLoader::getFilenameRewriteCallback()) {
++            $filename = $rewriteCallback($filename);
++        }
+         $filename = \realpath($filename);
+ 
+         unset($this->whitelistedFiles[$filename]);

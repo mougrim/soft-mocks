@@ -1,0 +1,16 @@
+diff --git a/src/Util/FileLoader.php b/src/Util/FileLoader.php
+index 55d416947..566d3d82a 100644
+--- a/src/Util/FileLoader.php
++++ b/src/Util/FileLoader.php
+@@ -31,6 +31,11 @@ public static function setFilenameRewriteCallback(Callable $callback)
+         self::$filename_rewrite_callback = $callback;
+     }
+ 
++    public static function getFilenameRewriteCallback()
++    {
++        return self::$filename_rewrite_callback;
++    }
++
+     /**
+      * Provide callback for restoring rewritten test file names
+      * @param callable $callback (rewritten_filename => source_filename)
