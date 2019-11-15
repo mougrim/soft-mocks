@@ -2041,22 +2041,23 @@ class SoftMocks
     public static function injectIntoPhpunit()
     {
         /** @noinspection PhpUndefinedClassInspection */
+        /** @noinspection ClassConstantUsageCorrectnessInspection */
         $possible_class_groups = [
             [
-                'file_loader' => \PHPUnit_Util_Fileloader::class,
-                'filter' => \PHPUnit_Util_Filter::class,
+                'file_loader' => \PHPUnit\Util\FileLoader::class,
+                'filter' => \PHPUnit\Util\Filter::class,
             ],
             [
                 'file_loader' => \PHPUnit\Util\Fileloader::class,
                 'filter' => \PHPUnit\Util\Filter::class,
             ],
             [
-                'file_loader' => \PHPUnit\Util\FileLoader::class,
-                'filter' => \PHPUnit\Util\Filter::class,
+                'file_loader' => \PHPUnit_Util_Fileloader::class,
+                'filter' => \PHPUnit_Util_Filter::class,
             ],
         ];
         /** @noinspection PhpUndefinedClassInspection */
-        /** @var \PHPUnit_Util_Fileloader[]|\PHPUnit\Util\Fileloader[]|\PHPUnit\Util\FileLoader[] $classes */
+        /** @var \PHPUnit\Util\FileLoader[]|\PHPUnit\Util\Fileloader[]|\PHPUnit_Util_Fileloader[] $classes */
         $classes = null;
         foreach ($possible_class_groups as $possible_classes) {
             if (!class_exists($possible_classes['file_loader'], false)) {
@@ -2069,9 +2070,11 @@ class SoftMocks
             return;
         }
 
-        /** @var \PHPUnit_Util_Fileloader|\PHPUnit\Util\Fileloader|\PHPUnit\Util\FileLoader $file_loader */
+        /** @noinspection PhpUndefinedClassInspection */
+        /** @var \PHPUnit\Util\FileLoader|\PHPUnit\Util\Fileloader|\PHPUnit_Util_Fileloader $file_loader */
         $file_loader = $classes['file_loader'];
-        /** @var \PHPUnit_Util_Filter|\PHPUnit\Util\Filter $filter */
+        /** @noinspection PhpUndefinedClassInspection */
+        /** @var \PHPUnit\Util\Filter|\PHPUnit_Util_Filter $filter */
         $filter = $classes['filter'];
 
         if (!is_callable([$file_loader, 'setFilenameRewriteCallback'])) {
