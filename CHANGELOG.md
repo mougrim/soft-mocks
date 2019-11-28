@@ -8,6 +8,7 @@ There are next changes:
 - update `nikic/php-parser` to `^4.3.0`, so now version isn't specific
 - minimum php version now is `7.0`
 - now ext-json is required for get nikic/php-parser version for right rewritten files cache
+- fixed error 'Unbinding $this of closure is deprecated'
 
 ## v2.0.6
 

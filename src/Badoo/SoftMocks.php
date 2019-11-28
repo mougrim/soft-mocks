@@ -33,7 +33,7 @@ if (!function_exists('mb_orig_substr')) {
 
 class SoftMocksFunctionCreator
 {
-    public function run($obj, $class, $params, $mocks)
+    public static function run($obj, $class, $params, $mocks)
     {
         if ($mocks['code'] instanceof \Closure) {
             $new_func = $mocks['code'];
@@ -1334,7 +1334,7 @@ class SoftMocks
             if (self::$debug) {
                 self::debug("Intercepting call to $class->$method");
             }
-            return (new SoftMocksFunctionCreator())->run($obj, $class, $args, self::$mocks[$class][$method]);
+            return SoftMocksFunctionCreator::run($obj, $class, $args, self::$mocks[$class][$method]);
         }
 
         try {
@@ -1346,7 +1346,7 @@ class SoftMocks
                 if (self::$debug) {
                     self::debug("Intercepting call to $class->$method");
                 }
-                return (new SoftMocksFunctionCreator())->run($obj, $class, $args, self::$mocks[$decl_class][$method]);
+                return SoftMocksFunctionCreator::run($obj, $class, $args, self::$mocks[$decl_class][$method]);
             }
         } catch (\ReflectionException $e) {
             if (method_exists($obj, '__call')) {
@@ -1367,7 +1367,7 @@ class SoftMocks
             if (self::$debug) {
                 self::debug("Intercepting call to $class::$method");
             }
-            return (new SoftMocksFunctionCreator())->run(null, $class, $args, self::$mocks[$class][$method]);
+            return SoftMocksFunctionCreator::run(null, $class, $args, self::$mocks[$class][$method]);
         }
 
         try {
@@ -1380,7 +1380,7 @@ class SoftMocks
                 if (self::$debug) {
                     self::debug("Intercepting call to $class::$method");
                 }
-                return (new SoftMocksFunctionCreator())->run(null, $class, $args, self::$mocks[$decl_class][$method]);
+                return SoftMocksFunctionCreator::run(null, $class, $args, self::$mocks[$decl_class][$method]);
             }
         } catch (\ReflectionException $e) {
             if (method_exists($class, '__callStatic')) {
