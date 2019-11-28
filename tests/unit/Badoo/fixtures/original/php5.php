@@ -31,7 +31,16 @@ if (!empty($_SERVER['HTTP_ORIG_DOMAIN'])) {
 </html>
 END;
     exit;
+} elseif (false) {
+    echo "Never1!\n";
+} else if (false) {
+    echo "Never2!\n";
+} else {
+    echo "Always!\n";
 }
+
+if (true) echo "Always!\n";
+else echo "Never!\n";
 
 $developer = 'somebody';
 
@@ -51,6 +60,47 @@ include_once 'debug.php';
 isRobotDebug();
 isCssDebug();
 if (isCompressHTMLDebug()) define('COMPRESS_HTML_DEBUG', true);
+
+while (false) echo "never!\n";
+
+while (false) {
+    echo "never!\n";
+}
+
+do echo "always!\n";
+while (false);
+do {
+    echo "always!\n";
+} while (false);
+
+$array = [
+    1,
+    replaceSomething('string'),
+    3,
+];
+for ($i = 0; $i < \count($array); $i++) {
+    $value = $array[$i];
+}
+
+foreach ($array as $key => $value) {
+    echo "{$key}: {$value}\n";
+}
+
+$switch = 5;
+
+switch ($switch) {
+    case 4:
+        echo "switch 4\n";
+        break;
+
+    case 5:
+    case 6:
+        echo "switch 5|6\n";
+        break;
+
+    default:
+        echo "switch default\n";
+}
 
 function replaceSomething($string)
 {

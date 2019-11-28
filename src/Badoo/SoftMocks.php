@@ -50,6 +50,7 @@ class SoftMocksFunctionCreator
 class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
 {
     private $cur_ln;
+    protected $nl = "\n";
 
     /**
      * Pretty prints an array of nodes (statements) and indents them optionally.
@@ -59,27 +60,28 @@ class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
      *
      * @return string Pretty printed statements
      */
-    protected function pStmts(array $nodes, $indent = true)
+    protected function pStmts(array $nodes, bool $indent = true) : string
     {
-        $result = '';
+        if ($indent) {
+            $this->indent();
+        }
 
+        $result = '';
         foreach ($nodes as $node) {
             $row = "";
 
             $cur_ln = $this->cur_ln;
 
-            $comments = $node->getAttribute('comments', array());
-            $comments = !empty($comments) ? ($this->pComments($node->getAttribute('comments', array())) . "\n") : "";
+            $comments = $node->getComments();
+            $comments = !empty($comments) ? ($this->nl . $this->pComments($node->getComments())) : '';
             $this->cur_ln += substr_count($comments, "\n");
 
             if ($node->getLine() > $this->cur_ln) {
-                $row .= str_repeat("\n", $node->getLine() - $this->cur_ln);
-                $this->cur_ln += substr_count($row, "\n");
+                $comments .= $this->nl;
+                $row .= str_repeat($this->nl, $node->getLine() - $this->cur_ln - 1);
             }
 
-            $row .= $comments
-                . $this->p($node)
-                . ($node instanceof \PhpParser\Node\Expr ? ';' : '');
+            $row .= $comments . $this->p($node);
 
             $this->cur_ln = $cur_ln + substr_count($row, "\n"); // get rid of cur_ln modifications in deeper context
 
@@ -87,13 +89,13 @@ class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
         }
 
         if ($indent) {
-            return preg_replace('~\n(?!$|' . $this->noIndentToken . ')~', "\n    ", $result);
-        } else {
-            return $result;
+            $this->outdent();
         }
+
+        return $result;
     }
 
-    protected function pComments(array $comments)
+    protected function pComments(array $comments) : string
     {
         $formattedComments = [];
 
@@ -104,44 +106,45 @@ class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
             }
         }
 
-        return !empty($formattedComments) ? implode("\n", $formattedComments) : "";
+        return !empty($formattedComments) ? implode($this->nl, $formattedComments) : '';
     }
 
-    protected function pCommaSeparatedMultiline(array $nodes, $trailingComma)
+    protected function pCommaSeparatedMultiline(array $nodes, bool $trailingComma) : string
     {
+        $this->indent();
         $result = '';
         $lastIdx = count($nodes) - 1;
         foreach ($nodes as $idx => $node) {
             if ($node !== null) {
-                $comments = $node->getAttribute('comments', array());
+                $comments = $node->getComments();
                 if ($comments) {
                     $result .= $this->pComments($comments);
                 }
 
-                $result .= "\n" . $this->p($node);
+                $result .= $this->nl . $this->p($node);
             } else {
-                $result .= "\n";
+                $result .= $this->nl;
             }
             if ($trailingComma || $idx !== $lastIdx) {
                 $result .= ',';
             }
         }
 
-        return preg_replace('~\n(?!$|' . $this->noIndentToken . ')~', "\n    ", $result);
+        $this->outdent();
+        return $result;
     }
 
-    public function prettyPrintFile(array $stmts)
+    public function prettyPrintFile(array $stmts) : string
     {
         $this->cur_ln = 1;
         $this->preprocessNodes($stmts);
         $result = $this->pStmts($stmts, false);
         $result = $this->handleMagicTokens($result);
-        return "<?php " . $result;
-    }
-
-    protected function p(\PhpParser\Node $node)
-    {
-        return $this->{'p' . $node->getType()}($node);
+        $prefix = '<?php';
+        if ($result && $result[0] !== "\n") {
+            $prefix .= ' ';
+        }
+        return "{$prefix}{$result}";
     }
 
     protected function pExpr_Array(\PhpParser\Node\Expr\Array_ $node)
@@ -203,17 +206,17 @@ class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
         }
     }
 
-    public function pExpr_Closure(\PhpParser\Node\Expr\Closure $node)
+    protected function pExpr_Closure(\PhpParser\Node\Expr\Closure $node)
     {
         return ($node->static ? 'static ' : '')
             . 'function ' . ($node->byRef ? '&' : '')
             . '(' . $this->pCommaSeparated($node->params) . ')'
             . (!empty($node->uses) ? ' use(' . $this->pCommaSeparated($node->uses) . ')' : '')
-            . (null !== $node->returnType ? ' : ' . $this->pType($node->returnType) : '')
+            . (null !== $node->returnType ? ' : ' . $this->p($node->returnType) : '')
             . ' {' . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_Namespace(\PhpParser\Node\Stmt\Namespace_ $node)
+    protected function pStmt_Namespace(\PhpParser\Node\Stmt\Namespace_ $node)
     {
         if ($this->canUseSemicolonNamespaces) {
             return 'namespace ' . $this->p($node->name) . ';' . $this->pStmts($node->stmts, false);
@@ -223,63 +226,73 @@ class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
         }
     }
 
-    public function pStmt_Interface(\PhpParser\Node\Stmt\Interface_ $node)
+    protected function pStmt_Interface(\PhpParser\Node\Stmt\Interface_ $node)
     {
         return 'interface ' . $node->name
             . (!empty($node->extends) ? ' extends ' . $this->pCommaSeparated($node->extends) : '')
             . '{' . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_Trait(\PhpParser\Node\Stmt\Trait_ $node)
+    protected function pStmt_Class(\PhpParser\Node\Stmt\Class_ $node)
+    {
+        $this->cur_ln = $node->getLine();
+        return $this->pClassCommon($node, ' ' . $node->name);
+    }
+
+    protected function pStmt_Trait(\PhpParser\Node\Stmt\Trait_ $node)
     {
         return 'trait ' . $node->name
             . '{' . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_TraitUse(\PhpParser\Node\Stmt\TraitUse $node)
+    protected function pStmt_TraitUse(\PhpParser\Node\Stmt\TraitUse $node)
     {
         return 'use ' . $this->pCommaSeparated($node->traits)
             . (empty($node->adaptations) ? ';' : ' {' . $this->pStmts($node->adaptations) . '}');
     }
 
-    public function pStmt_ClassMethod(\PhpParser\Node\Stmt\ClassMethod $node)
+    protected function pStmt_ClassMethod(\PhpParser\Node\Stmt\ClassMethod $node)
     {
-        return $this->pModifiers($node->type)
+        $this->cur_ln = $node->getLine();
+        return $this->pModifiers($node->flags)
             . 'function ' . ($node->byRef ? '&' : '') . $node->name
             . '(' . $this->pCommaSeparated($node->params) . ')'
-            . (null !== $node->returnType ? ' : ' . $this->pType($node->returnType) : '')
+            . (null !== $node->returnType ? ' : ' . $this->p($node->returnType) : '')
             . (null !== $node->stmts ? '{' . $this->pStmts($node->stmts) . '}' : ';');
     }
 
-    public function pStmt_Function(\PhpParser\Node\Stmt\Function_ $node)
+    protected function pStmt_Function(\PhpParser\Node\Stmt\Function_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'function ' . ($node->byRef ? '&' : '') . $node->name
             . '(' . $this->pCommaSeparated($node->params) . ')'
-            . (null !== $node->returnType ? ' : ' . $this->pType($node->returnType) : '')
+            . (null !== $node->returnType ? ' : ' . $this->p($node->returnType) : '')
             . '{' . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_If(\PhpParser\Node\Stmt\If_ $node)
+    protected function pStmt_If(\PhpParser\Node\Stmt\If_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'if (' . $this->p($node->cond) . ') {'
             . $this->pStmts($node->stmts) . '}'
-            . $this->pImplode($node->elseifs)
-            . (null !== $node->else ? $this->p($node->else) : '');
+            . ($node->elseifs ? ' ' . $this->pImplode($node->elseifs, ' ') : '')
+            . (null !== $node->else ? ' ' . $this->p($node->else) : '');
     }
 
-    public function pStmt_ElseIf(\PhpParser\Node\Stmt\ElseIf_ $node)
+    protected function pStmt_ElseIf(\PhpParser\Node\Stmt\ElseIf_ $node)
     {
-        return ' elseif (' . $this->p($node->cond) . ') {'
+        return 'elseif (' . $this->p($node->cond) . ') {'
             . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_Else(\PhpParser\Node\Stmt\Else_ $node)
+    protected function pStmt_Else(\PhpParser\Node\Stmt\Else_ $node)
     {
-        return ' else {' . $this->pStmts($node->stmts) . '}';
+        return 'else {' . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_For(\PhpParser\Node\Stmt\For_ $node)
+    protected function pStmt_For(\PhpParser\Node\Stmt\For_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'for ('
             . $this->pCommaSeparated($node->init) . ';' . (!empty($node->cond) ? ' ' : '')
             . $this->pCommaSeparated($node->cond) . ';' . (!empty($node->loop) ? ' ' : '')
@@ -287,124 +300,63 @@ class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
             . ') {' . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_Foreach(\PhpParser\Node\Stmt\Foreach_ $node)
+    protected function pStmt_Foreach(\PhpParser\Node\Stmt\Foreach_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'foreach (' . $this->p($node->expr) . ' as '
             . (null !== $node->keyVar ? $this->p($node->keyVar) . ' => ' : '')
             . ($node->byRef ? '&' : '') . $this->p($node->valueVar) . ') {'
             . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_While(\PhpParser\Node\Stmt\While_ $node)
+    protected function pStmt_While(\PhpParser\Node\Stmt\While_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'while (' . $this->p($node->cond) . ') {'
             . $this->pStmts($node->stmts) . '}';
     }
 
-    public function pStmt_Do(\PhpParser\Node\Stmt\Do_ $node)
+    protected function pStmt_Do(\PhpParser\Node\Stmt\Do_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'do {' . $this->pStmts($node->stmts)
             . '} while (' . $this->p($node->cond) . ');';
     }
 
-    public function pStmt_Switch(\PhpParser\Node\Stmt\Switch_ $node)
+    protected function pStmt_Switch(\PhpParser\Node\Stmt\Switch_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'switch (' . $this->p($node->cond) . ') {'
             . $this->pStmts($node->cases) . '}';
     }
 
-    public function pStmt_Case(\PhpParser\Node\Stmt\Case_ $node)
+    protected function pStmt_Case(\PhpParser\Node\Stmt\Case_ $node)
     {
+        $this->cur_ln = $node->getLine();
         return (null !== $node->cond ? 'case ' . $this->p($node->cond) : 'default') . ':'
             . $this->pStmts($node->stmts);
     }
 
-    public function pStmt_TryCatch(\PhpParser\Node\Stmt\TryCatch $node)
+    protected function pStmt_TryCatch(\PhpParser\Node\Stmt\TryCatch $node)
     {
+        $this->cur_ln = $node->getLine();
         return 'try {' . $this->pStmts($node->stmts) . '}'
-            . $this->pImplode($node->catches)
+            . ($node->catches ? ' ' . $this->pImplode($node->catches, ' ') : '')
             . ($node->finally !== null ? ' finally {' . $this->pStmts($node->finally->stmts) . '}' : '');
     }
 
-    public function pStmt_Catch(\PhpParser\Node\Stmt\Catch_ $node)
+    protected function pStmt_Catch(\PhpParser\Node\Stmt\Catch_ $node)
     {
-        return ' catch (' . $this->pImplode($node->types, ' | ') . ' $' . $node->var . ') {'
-            . $this->pStmts($node->stmts) . '}';
-    }
-
-    public function pStmt_Break(\PhpParser\Node\Stmt\Break_ $node)
-    {
-        return 'break' . ($node->num !== null ? ' ' . $this->p($node->num) : '') . ';';
-    }
-
-    public function pStmt_Continue(\PhpParser\Node\Stmt\Continue_ $node)
-    {
-        return 'continue' . ($node->num !== null ? ' ' . $this->p($node->num) : '') . ';';
-    }
-
-    public function pStmt_Return(\PhpParser\Node\Stmt\Return_ $node)
-    {
-        return 'return' . (null !== $node->expr ? ' ' . $this->p($node->expr) : '') . ';';
-    }
-
-    public function pStmt_Throw(\PhpParser\Node\Stmt\Throw_ $node)
-    {
-        return 'throw ' . $this->p($node->expr) . ';';
-    }
-
-    public function pStmt_Label(\PhpParser\Node\Stmt\Label $node)
-    {
-        return $node->name . ':';
-    }
-
-    public function pStmt_Goto(\PhpParser\Node\Stmt\Goto_ $node)
-    {
-        return 'goto ' . $node->name . ';';
-    }
-
-    // Other
-
-    public function pStmt_Echo(\PhpParser\Node\Stmt\Echo_ $node)
-    {
-        return 'echo ' . $this->pCommaSeparated($node->exprs) . ';';
-    }
-
-    public function pStmt_Static(\PhpParser\Node\Stmt\Static_ $node)
-    {
-        return 'static ' . $this->pCommaSeparated($node->vars) . ';';
-    }
-
-    public function pStmt_Global(\PhpParser\Node\Stmt\Global_ $node)
-    {
-        return 'global ' . $this->pCommaSeparated($node->vars) . ';';
-    }
-
-    public function pStmt_StaticVar(\PhpParser\Node\Stmt\StaticVar $node)
-    {
-        return '$' . $node->name
-            . (null !== $node->default ? ' = ' . $this->p($node->default) : '');
-    }
-
-    public function pStmt_Unset(\PhpParser\Node\Stmt\Unset_ $node)
-    {
-        return 'unset(' . $this->pCommaSeparated($node->vars) . ');';
-    }
-
-    public function pStmt_HaltCompiler(\PhpParser\Node\Stmt\HaltCompiler $node)
-    {
-        return '__halt_compiler();' . $node->remaining;
+        return 'catch (' . $this->pImplode($node->types, ' | ') . ' '
+            . $this->p($node->var)
+            . ') {' . $this->pStmts($node->stmts) . '}';
     }
 
     // Helpers
 
-    protected function pType($node)
-    {
-        return is_string($node) ? $node : $this->p($node);
-    }
-
     protected function pClassCommon(\PhpParser\Node\Stmt\Class_ $node, $afterClassToken)
     {
-        return $this->pModifiers($node->type)
+        return $this->pModifiers($node->flags)
             . 'class' . $afterClassToken
             . (null !== $node->extends ? ' extends ' . $this->p($node->extends) : '')
             . (!empty($node->implements) ? ' implements ' . $this->pCommaSeparated($node->implements) : '')
@@ -433,8 +385,6 @@ class SoftMocksPrinter extends \PhpParser\PrettyPrinter\Standard
 
 class SoftMocks
 {
-    /** for create new files when parser version changed */
-    const PARSER_VERSION = '3.0.6';
     const MOCKS_CACHE_TOUCHTIME = 86400; // 1 day
 
     private static $rewrite_cache = [/* source => target */];
@@ -458,6 +408,9 @@ class SoftMocks
         E_RECOVERABLE_ERROR => "Recoverable Error",
     ];
 
+    private static $vendor_path;
+    /** for create new files when parser version changed */
+    private static $parser_version;
     private static $ignore = [];
 
     public static $internal_functions = [];
@@ -661,6 +614,53 @@ class SoftMocks
         self::ignoreFiles(get_included_files());
         self::injectIntoPhpunit();
         self::initProjectPath();
+        self::initParserVersion();
+    }
+
+    public static function setVendorPath(string $vendor_path)
+    {
+        self::$vendor_path = $vendor_path;
+    }
+
+    /**
+     * Parser version is needed for create new files when parser version changed 
+     */
+    protected static function initParserVersion()
+    {
+        if (!self::$vendor_path) {
+            throw new \RuntimeException(
+                'Vendor path is required for get nikic/php-parser version for for right rewritten files cache'
+            );
+        }
+        $installed_file = self::$vendor_path . '/composer/installed.json';
+        $installed_content = file_get_contents($installed_file);
+        if (!$installed_content) {
+            throw new \RuntimeException(
+                "Can't get installed packages for get nikic/php-parser version for for right rewritten files cache"
+            );
+        }
+        /** @noinspection PhpComposerExtensionStubsInspection */
+        $installed = json_decode($installed_content, true);
+        /** @noinspection PhpComposerExtensionStubsInspection */
+        if (json_last_error() !== \JSON_ERROR_NONE) {
+            $error = '[' . json_last_error() . '] ' . json_last_error_msg();
+            throw new \RuntimeException(
+                "Can't parse installed packages json for get nikic/php-parser version for for right rewritten files cache: {$error}"
+            );
+        }
+        foreach ($installed as $package) {
+            if (!isset($package['name'], $package['version'])) {
+                continue;
+            }
+            if ($package['name'] !== 'nikic/php-parser') {
+                continue;
+            }
+            self::$parser_version = $package['version'];
+            return;
+        }
+        throw new \RuntimeException(
+            "Can't find nikic/php-parser version in installed packages for for right rewritten files cache"
+        );
     }
 
     protected static function initProjectPath()
@@ -910,7 +910,7 @@ class SoftMocks
     {
         if (!isset(self::$mocks_dir_version)) {
             // Previously:
-            // phpversion() . self::PARSER_VERSION . md5_file(__FILE__);
+            // phpversion() . self::$parser_version . md5_file(__FILE__);
 
             $parts = [];
 
@@ -922,7 +922,7 @@ class SoftMocks
 
             $parts[] = mb_orig_substr(md5(new \ReflectionExtension("tokenizer")), 0, 7);
 
-            $parts[] = self::PARSER_VERSION;
+            $parts[] = self::$parser_version;
 
             $parts[] = mb_orig_substr(md5_file(__FILE__), 0, 7);
 
@@ -2315,7 +2315,7 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
             "callExit",
             $args
         );
-        $NewNode->setLine($Node->getLine());
+        $NewNode->setAttribute('startLine', $Node->getLine());
 
         return $NewNode;
     }
@@ -2402,24 +2402,32 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
         }
         foreach ($Node->params as $Par) {
             $params_arr[] = new \PhpParser\Node\Expr\ArrayItem(
-                new \PhpParser\Node\Expr\Variable($Par->name),
+                $Par->var,
                 null,
                 $Par->byRef
             );
         }
 
+        $ParamsArray = new \PhpParser\Node\Expr\Array_($params_arr);
+        $ParamsArray->setAttribute('kind', \PhpParser\Node\Expr\Array_::KIND_SHORT);
         $body_stmts = [
-            new \PhpParser\Node\Expr\Assign(
-                new \PhpParser\Node\Expr\Variable("mm_func_args"),
-                new \PhpParser\Node\Expr\FuncCall(new \PhpParser\Node\Name("func_get_args"))
+            new \PhpParser\Node\Stmt\Expression(
+                new \PhpParser\Node\Expr\Assign(
+                    new \PhpParser\Node\Expr\Variable("mm_func_args"),
+                    new \PhpParser\Node\Expr\FuncCall(new \PhpParser\Node\Name("func_get_args"))
+                )
             ),
-            new \PhpParser\Node\Expr\Assign(
-                new \PhpParser\Node\Expr\Variable("params"),
-                new \PhpParser\Node\Expr\Array_($params_arr)
+            new \PhpParser\Node\Stmt\Expression(
+                new \PhpParser\Node\Expr\Assign(
+                    new \PhpParser\Node\Expr\Variable("params"),
+                    $ParamsArray
+                )
             ),
-            new \PhpParser\Node\Expr\Assign(
-                new \PhpParser\Node\Expr\Variable("variadic_params_idx"),
-                new \PhpParser\Node\Scalar\String_($variadic_params_idx)
+            new \PhpParser\Node\Stmt\Expression(
+                new \PhpParser\Node\Expr\Assign(
+                    new \PhpParser\Node\Expr\Variable("variadic_params_idx"),
+                    new \PhpParser\Node\Scalar\String_((string)$variadic_params_idx)
+                )
             ),
         ];
 
@@ -2434,18 +2442,20 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
         if ($this->has_yield) {
             $args = [$static, $function];
 
-            $body_stmts[] = new \PhpParser\Node\Expr\Assign(
-                new \PhpParser\Node\Expr\Variable("mm_callback"),
-                new \PhpParser\Node\Expr\StaticCall(
-                    new \PhpParser\Node\Name("\\" . SoftMocks::class),
-                    "getMockForGenerator",
-                    $args
+            $body_stmts[] = new \PhpParser\Node\Stmt\Expression(
+                new \PhpParser\Node\Expr\Assign(
+                    new \PhpParser\Node\Expr\Variable("mm_callback"),
+                    new \PhpParser\Node\Expr\StaticCall(
+                        new \PhpParser\Node\Name("\\" . SoftMocks::class),
+                        "getMockForGenerator",
+                        $args
+                    )
                 )
             );
 
             $func_call_args = [];
             foreach ($Node->params as $Par) {
-                $func_call_args[] = new \PhpParser\Node\Arg(new \PhpParser\Node\Expr\Variable($Par->name));
+                $func_call_args[] = new \PhpParser\Node\Arg($Par->var);
             }
 
             $val = new \PhpParser\Node\Expr\Variable("mm_val");
@@ -2458,7 +2468,11 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
                 $val,
                 [
                     'byRef' => $Node->byRef,
-                    'stmts' => [new \PhpParser\Node\Expr\Yield_($val)],
+                    'stmts' => [
+                        new \PhpParser\Node\Stmt\Expression(
+                            new \PhpParser\Node\Expr\Yield_($val)
+                        )
+                    ],
                 ]
             );
 
@@ -2467,7 +2481,7 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
             $args = [
                 new \PhpParser\Node\Arg(
                     new \PhpParser\Node\Expr\ClassConstFetch(
-                        new \PhpParser\Node\Name($this->cur_class ?: 'self'),
+                        new \PhpParser\Node\Name((string)($this->cur_class ?: 'self')),
                         "class"
                     )
                 ),
@@ -2479,8 +2493,8 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
                 new \PhpParser\Node\Expr\Variable("__softmocksvariableforcode")
             );
 
-            if ($Node->returnType === 'void') {
-                $body_stmts[] = $eval;
+            if ($Node->returnType instanceof \PhpParser\Node\Identifier && $Node->returnType->name === 'void') {
+                $body_stmts[] = new \PhpParser\Node\Stmt\Expression($eval);
                 $body_stmts[] = new \PhpParser\Node\Stmt\Return_();
             } else {
                 $body_stmts[] = new \PhpParser\Node\Stmt\Return_($eval);
@@ -2537,7 +2551,7 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
             }
 
             // an ugly hack for ArrayAccess objects that are used as "$this['something']"
-            if ($value->var instanceof \PhpParser\Node\Expr\Variable && $value->var->name == 'this') {
+            if ($value->var instanceof \PhpParser\Node\Expr\Variable && $value->var->name === 'this') {
                 return false;
             }
 
@@ -2573,9 +2587,11 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
                 }
                 $unpacked_arg = clone $arg;
                 $unpacked_arg->unpack = false;
+                $ArgsArray = new \PhpParser\Node\Expr\Array_($arr_args);
+                $ArgsArray->setAttribute('kind', \PhpParser\Node\Expr\Array_::KIND_SHORT);
                 return new \PhpParser\Node\Expr\FuncCall(
                     new \PhpParser\Node\Name(['', 'array_merge']),
-                    [new \PhpParser\Node\Expr\Array_($arr_args), $unpacked_arg]
+                    [$ArgsArray, $unpacked_arg]
                 );
             }
             $arr_args[] = new \PhpParser\Node\Expr\ArrayItem(
@@ -2587,12 +2603,14 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
             $i++;
         }
 
-        return new \PhpParser\Node\Expr\Array_($arr_args);
+        $ResultArray = new \PhpParser\Node\Expr\Array_($arr_args);
+        $ResultArray->setAttribute('kind', \PhpParser\Node\Expr\Array_::KIND_SHORT);
+        return $ResultArray;
     }
 
     private static function nodeNameToArg($name)
     {
-        if (is_scalar($name)) {
+        if (is_scalar($name) || $name instanceof \PhpParser\Node\Identifier) {
             $name = new \PhpParser\Node\Scalar\String_($name);
         } else if ($name instanceof \PhpParser\Node\Name) {
             return new \PhpParser\Node\Arg(new \PhpParser\Node\Expr\ClassConstFetch($name, 'class'));
@@ -2631,7 +2649,7 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
                 self::nodeArgsToArray($Node->args, $arg_is_ref),
             ]
         );
-        $NewNode->setLine($Node->getLine());
+        $NewNode->setAttribute('startLine', $Node->getLine());
 
         return $NewNode;
     }
@@ -2657,13 +2675,13 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
             ]
         );
 
-        $NewNode->setLine($Node->getLine());
+        $NewNode->setAttribute('startLine', $Node->getLine());
         return $NewNode;
     }
 
     public function rewriteExpr_ClassConstFetch(\PhpParser\Node\Expr\ClassConstFetch $Node)
     {
-        if ($this->disable_const_rewrite_level > 0 || strtolower($Node->name) == 'class') {
+        if ($this->disable_const_rewrite_level > 0 || strtolower($Node->name) === 'class') {
             return null;
         }
 
@@ -2683,7 +2701,7 @@ class SoftMocksTraverser extends \PhpParser\NodeVisitorAbstract
             $params
         );
 
-        $NewNode->setLine($Node->getLine());
+        $NewNode->setAttribute('startLine', $Node->getLine());
         return $NewNode;
     }
 }

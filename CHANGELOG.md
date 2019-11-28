@@ -5,6 +5,9 @@
 There are next changes:
 
 - add support phpunit 7.x and 8.x
+- update `nikic/php-parser` to `^4.3.0`, so now version isn't specific
+- minimum php version now is `7.0`
+- now ext-json is required for get nikic/php-parser version for right rewritten files cache
 
 ## v2.0.6
 

@@ -21,11 +21,24 @@ if (!$composer_install) {
 }
 
 $php_parser_dir = dirname($composer_install) . '/nikic/php-parser/lib/PhpParser/';
-require_once "{$php_parser_dir}Autoloader.php";
-\PhpParser\Autoloader::register(true);
+// workaround for right load files, because now PhpParser uses composer autoload, which should be init later
+require_once "{$php_parser_dir}Parser.php";
+require_once "{$php_parser_dir}ParserAbstract.php";
+require_once "{$php_parser_dir}PrettyPrinterAbstract.php";
+require_once "{$php_parser_dir}Builder.php";
+require_once "{$php_parser_dir}Builder/Declaration.php";
+require_once "{$php_parser_dir}NodeVisitor.php";
+require_once "{$php_parser_dir}NodeVisitorAbstract.php";
+require_once "{$php_parser_dir}NodeTraverserInterface.php";
+require_once "{$php_parser_dir}Node.php";
+require_once "{$php_parser_dir}NodeAbstract.php";
+require_once "{$php_parser_dir}Lexer/TokenEmulator/TokenEmulatorInterface.php";
+require_once "{$php_parser_dir}Node/Expr.php";
+require_once "{$php_parser_dir}Node/FunctionLike.php";
 // for prevent autoload problems
 $files = [];
 exec('find ' . escapeshellarg($php_parser_dir) . " -type f -name '*.php'", $files);
+sort($files);
 foreach ($files as $file) {
     require_once $file;
 }
@@ -33,6 +46,7 @@ unset($php_parser_dir, $files, $file);
 
 /* Soft Mocks init */
 require_once(dirname(__DIR__) . "/src/Badoo/SoftMocks.php");
+SoftMocks::setVendorPath(dirname($composer_install));
 SoftMocks::setIgnoreSubPaths(
     array(
         '/vendor/phpunit/' => '/vendor/phpunit/',

@@ -10,8 +10,9 @@
     }
   ],
   "require": {
-    "php": ">=5.5",
-    "nikic/php-parser": "3.0.6"
+    "ext-json": "*",
+    "php": ">=7.0",
+    "nikic/php-parser": "^4.3.0"
   },
   "require-dev": {
     "vaimo/composer-patches": "3.23.1",

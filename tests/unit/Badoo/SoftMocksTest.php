@@ -27,19 +27,6 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
         }
     }
 
-    public function testParserVersion()
-    {
-        $composer_json = file_get_contents(__DIR__ . '/../../../composer.json');
-        static::assertNotEmpty($composer_json, "Can't get content from composer.json file");
-        $composer_data = json_decode($composer_json, true);
-        static::assertSame(
-            JSON_ERROR_NONE,
-            json_last_error(),
-            "Can't parse composer.json: [" . json_last_error() . '] ' . json_last_error_msg()
-        );
-        static::assertSame(\Badoo\SoftMocks::PARSER_VERSION, $composer_data['require']['nikic/php-parser']);
-    }
-
     public function testExitMock()
     {
         \Badoo\SoftMocks::redefineExit(
@@ -1535,8 +1522,6 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
 
     public function testAnonymous()
     {
-        static::markTestSkippedForPHPVersionBelow('7.0.0');
-
         require_once __DIR__ . '/AnonymousTestClass.php';
         static::assertEquals(1, AnonymousTestClass::SOMETHING);
         $test = new AnonymousTestClass();
@@ -1552,8 +1537,6 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
 
     public function testWithReturnTypeDeclarationsPHP7()
     {
-        static::markTestSkippedForPHPVersionBelow('7.0.0');
-
         require_once __DIR__ . '/WithReturnTypeDeclarationsPHP7TestClass.php';
 
         \Badoo\SoftMocks::redefineMethod(
@@ -2707,10 +2690,6 @@ class SoftMocksTest extends \PHPUnit\Framework\TestCase
      */
     public function testRewrite($filename)
     {
-        if (($filename === 'php7.php')) {
-            static::markTestSkippedForPHPVersionBelow('7.0.0');
-        }
-
         if (($filename === 'php71.php')) {
             static::markTestSkippedForPHPVersionBelow('7.1.0');
         }

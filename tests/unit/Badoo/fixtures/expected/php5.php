@@ -1,12 +1,12 @@
-<?php 
+<?php
 
 
-
-
-
-
-\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'error_reporting', array(\Badoo\SoftMocks::getConst(__NAMESPACE__, 'E_ALL')));
-\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'ini_set', array('display_errors', true));
+/**
+ * This file contains php5 code
+ * And comments
+ */
+\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'error_reporting', [\Badoo\SoftMocks::getConst(__NAMESPACE__, 'E_ALL')]);
+\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'ini_set', ['display_errors', true]);
 
 
 if (!empty($_SERVER['HTTP_ORIG_DOMAIN'])) {
@@ -16,8 +16,8 @@ if (!empty($_SERVER['HTTP_ORIG_DOMAIN'])) {
     $header = 'HTTP/1.1 301 Moved Permanently';
     $redirect_address = 'https://badoo.com';
     
-    \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'header', array($header));
-    \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'header', array('Location: ' . $redirect_address));
+    \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'header', [$header]);
+    \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'header', ['Location: ' . $redirect_address]);
     
     echo <<<END
 <html>\n <head>\n  <title>Status 301 - Moved Permanently</title>\n  <meta http-equiv="Refresh" content="0; url={$redirect_address}">\n </head>\n <body bgcolor="#ffffff" text="#000000" link="#ff0000" alink="#ff0000" vlink="#ff0000">\n Document permanently moved: <a href="{$redirect_address}">{$redirect_address}</a>\n </body>\n</html>
@@ -30,33 +30,83 @@ END;
     
     
     
-    \Badoo\SoftMocks::callExit();}
+    \Badoo\SoftMocks::callExit();} elseif (false) {
+    
+    echo "Never1!\n";} else {
+    if (false) {
+        echo "Never2!\n";} else {
+        
+        echo "Always!\n";}}
 
+
+if (true) {echo "Always!\n";} else {
+    echo "Never!\n";}
 
 $developer = 'somebody';
 
 $_SERVER['developer'] = $developer;
 
-@\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'ini_set', array('error_log', '/local/logs/php/badoo-' . $developer . '.log'));
+@\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'ini_set', ['error_log', '/local/logs/php/badoo-' . $developer . '.log']);
 
-\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'define', array('PHPWEB_PATH_PHOTOS', '/home/' . $developer . '/photos'));
+\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'define', ['PHPWEB_PATH_PHOTOS', '/home/' . $developer . '/photos']);
 
-$old_umask = \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'umask', array(0));
+$old_umask = \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'umask', [0]);
 $create_dirs = [\Badoo\SoftMocks::getConst(__NAMESPACE__, 'PHPWEB_PATH_PHOTOS')];
 
 
 
 include_once \Badoo\SoftMocks::rewrite('debug.php');
 
-\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'isRobotDebug', array());
-\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'isCssDebug', array());
-if (\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'isCompressHTMLDebug', array())) {\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'define', array('COMPRESS_HTML_DEBUG', true));}
+\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'isRobotDebug', []);
+\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'isCssDebug', []);
+if (\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'isCompressHTMLDebug', [])) {\Badoo\SoftMocks::callFunction(__NAMESPACE__, 'define', ['COMPRESS_HTML_DEBUG', true]);}
+
+while (false) {echo "never!\n";}
+
+while (false) {
+    echo "never!\n";}
+
+
+do {echo "always!\n";} while (false);
+
+do {
+    echo "always!\n";} while (false);
+
+
+$array = [
+    1,
+    \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'replaceSomething', ['string']),
+    3,
+];
+for ($i = 0; $i < \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'count', [$array]); $i++) {
+    $value = $array[$i];}
+
+
+foreach ($array as $key => $value) {
+    echo "{$key}: {$value}\n";}
+
+
+$switch = 5;
+
+switch ($switch) {
+    case 4:
+        echo "switch 4\n";
+        break;
+    
+    case 5:
+    case 6:
+        echo "switch 5|6\n";
+        break;
+    
+    default:
+        echo "switch default\n";}
+
 
 function replaceSomething($string){
     
     
     
-    return \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'str_replace', array('something', 'somebody', $string));}
+    return \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'str_replace', ['something', 'somebody', $string]);}
 
 
 class SomeClass{
@@ -65,16 +115,16 @@ class SomeClass{
     
     public $a = 1;
     
-    public static function getValue(){if (false !== ($__softmocksvariableforcode = \Badoo\SoftMocks::isMocked(SomeClass::class, static::class, __FUNCTION__))) {$mm_func_args = func_get_args();$params = array();$variadic_params_idx = '';return eval($__softmocksvariableforcode);/** @codeCoverageIgnore */}
+    public static function getValue(){if (false !== ($__softmocksvariableforcode = \Badoo\SoftMocks::isMocked(SomeClass::class, static::class, __FUNCTION__))) {$mm_func_args = func_get_args();$params = [];$variadic_params_idx = '';return eval($__softmocksvariableforcode);/** @codeCoverageIgnore */}
         
         return \Badoo\SoftMocks::getClassConst(self::class, 'VALUE', self::class);}
     
     
-    public function method($string){if (false !== ($__softmocksvariableforcode = \Badoo\SoftMocks::isMocked(SomeClass::class, static::class, __FUNCTION__))) {$mm_func_args = func_get_args();$params = array($string);$variadic_params_idx = '';return eval($__softmocksvariableforcode);/** @codeCoverageIgnore */}
+    public function method($string){if (false !== ($__softmocksvariableforcode = \Badoo\SoftMocks::isMocked(SomeClass::class, static::class, __FUNCTION__))) {$mm_func_args = func_get_args();$params = [$string];$variadic_params_idx = '';return eval($__softmocksvariableforcode);/** @codeCoverageIgnore */}
         
         return self::methodSelf($string);}
     
     
-    protected static function methodSelf($string){if (false !== ($__softmocksvariableforcode = \Badoo\SoftMocks::isMocked(SomeClass::class, static::class, __FUNCTION__))) {$mm_func_args = func_get_args();$params = array($string);$variadic_params_idx = '';return eval($__softmocksvariableforcode);/** @codeCoverageIgnore */}
+    protected static function methodSelf($string){if (false !== ($__softmocksvariableforcode = \Badoo\SoftMocks::isMocked(SomeClass::class, static::class, __FUNCTION__))) {$mm_func_args = func_get_args();$params = [$string];$variadic_params_idx = '';return eval($__softmocksvariableforcode);/** @codeCoverageIgnore */}
         
-        return \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'replaceSomething', array(&$string));}}
+        return \Badoo\SoftMocks::callFunction(__NAMESPACE__, 'replaceSomething', [&$string]);}}
